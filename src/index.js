@@ -27,7 +27,7 @@ let point1
 let box
 let emitter
 let camera
-let p0Join = false
+let p0Join = false // Toggles for emitter
 let p1Join = false
 
 const game = new Phaser.Game(config);
@@ -38,11 +38,13 @@ function preload() {
 }
 
 function create() {
+  // Setup environment
   emitter = new Phaser.Events.EventEmitter()
   camera = this.cameras.add(0, 0, 800, 600)
   camera.setBackgroundColor('#123456')
   graphics = this.add.graphics()
   
+  // Setup Images
   box = this.physics.add.image(400, 300, 'square', 0).setOrigin(0.5).setInteractive()
   curve = new Phaser.Curves.Line([100, 100, 500, 500])
   point0 = this.physics.add.image(curve.p0.x, curve.p0.y, 'circle', 0).setInteractive()
@@ -55,6 +57,7 @@ function create() {
   point0.setData('vector', curve.p0)
   point1.setData('vector', curve.p1)
 
+  // Handle drag
   this.input.setDraggable([ point0, point1, box ])
 
   this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
@@ -74,22 +77,26 @@ function create() {
     }
   })
 
+  // Remove listener if not colliding
   this.input.on('dragend', (pointer, gameObject) => {
     if (!p0Join && !p1Join) {
       emitter.removeListener('changeBackground')
     }
   })
 
+  // Set collision flag and stick together
   this.physics.add.collider(point0, box, () => {
     p0Join = true
     handleStick(point0, box.x, box.y)
   })
 
+  // Set collision flag and stick together
   this.physics.add.collider(point1, box, () => {
     p1Join = true
     handleStick(point1, box.x, box.y)
   })
 
+  // Send emit
   this.input.addListener('pointerup', () => {
     emitter.emit('changeBackground')
   })
@@ -101,6 +108,7 @@ function update() {
   
   curve.draw(graphics)
 
+  // Collision check
   if (point0.x !== box.x && point0.y !== box.y) {
     p0Join = false
   }
@@ -110,6 +118,7 @@ function update() {
   }
 }
 
+// Stick box and point together and instantiate listener
 function handleStick (gameObject, posX, posY) {
   gameObject.data.get('vector').set(posX, posY)
   gameObject.x = posX
