@@ -22,9 +22,8 @@ const config = {
 
 let graphics
 let curve
-let point0
-let point1
-let box
+let boxes
+let points
 let emitter
 let camera
 let p0Join = false // Toggles for emitter
@@ -45,32 +44,41 @@ function create() {
   graphics = this.add.graphics()
   
   // Setup Images
-  box = this.physics.add.image(400, 300, 'square', 0).setOrigin(0.5).setInteractive()
-  curve = new Phaser.Curves.Line([100, 100, 500, 500])
-  point0 = this.physics.add.image(curve.p0.x, curve.p0.y, 'circle', 0).setInteractive()
-  point1 = this.physics.add.image(curve.p1.x, curve.p1.y, 'circle', 0).setInteractive()
+  boxes = this.physics.add.group({
+    collideWorldBounds: true,
+  })
 
-  point0.name = 'dragHandle'
-  point1.name = 'dragHandle'
-  box.name = 'box'
+  const box0 = boxes.create(100, 200, 'square')
+  const box1 = boxes.create(200, 300, 'square')
+
+  boxes.getChildren().forEach(box => {
+    box.setOrigin(0.5)
+    box.setInteractive()
+    this.input.setDraggable(box)
+  })
+
+  points = this.physics.add.group({
+    collideWorldBounds: true,
+  })
+
+  curve = new Phaser.Curves.Line([100, 100, 500, 500])
+
+  const point0 = points.create(curve.p0.x, curve.p0.y, 'circle', 0)
+  const point1 = points.create(curve.p1.x, curve.p1.y, 'circle', 0)
+
+  points.getChildren().forEach(point => {
+    point.setInteractive()
+    this.input.setDraggable(point)
+  })
 
   point0.setData('vector', curve.p0)
   point1.setData('vector', curve.p1)
 
   // Handle drag
-  this.input.setDraggable([ point0, point1, box ])
 
   this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
     gameObject.x = dragX
     gameObject.y = dragY
-
-    if (p0Join && gameObject.name === 'box') {
-      handleStick(point0, dragX, dragY)
-    }
-
-    if (p1Join && gameObject.name === 'box') {
-      handleStick(point1, dragX, dragY)
-    }
 
     if (gameObject.data) {
       gameObject.data.get('vector').set(dragX, dragY)
@@ -79,21 +87,12 @@ function create() {
 
   // Remove listener if not colliding
   this.input.on('dragend', (pointer, gameObject) => {
-    if (!p0Join && !p1Join) {
-      emitter.removeListener('changeBackground')
-    }
+    emitter.removeListener('changeBackground')
   })
 
   // Set collision flag and stick together
-  this.physics.add.collider(point0, box, () => {
-    p0Join = true
-    handleStick(point0, box.x, box.y)
-  })
-
-  // Set collision flag and stick together
-  this.physics.add.collider(point1, box, () => {
-    p1Join = true
-    handleStick(point1, box.x, box.y)
+  this.physics.add.collider(points, boxes, (_point, _box) => {
+    handleStick(_point, _box.x, _box.y)
   })
 
   // Send emit
@@ -107,15 +106,6 @@ function update() {
   graphics.lineStyle(2, 0xffffff, 1)
   
   curve.draw(graphics)
-
-  // Collision check
-  if (point0.x !== box.x && point0.y !== box.y) {
-    p0Join = false
-  }
-
-  if (point1.x !== box.x && point1.y !== box.y) {
-    p1Join = false
-  }
 }
 
 // Stick box and point together and instantiate listener
@@ -123,6 +113,8 @@ function handleStick (gameObject, posX, posY) {
   gameObject.data.get('vector').set(posX, posY)
   gameObject.x = posX
   gameObject.y = posY
+
+  console.log('here')
   
   emitter.addListener('changeBackground', handleColour, this)
 }
