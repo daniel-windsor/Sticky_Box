@@ -41,6 +41,7 @@ function create() {
   camera.setBackgroundColor('#123456')
   graphics = this.add.graphics()
 
+
   // Set curve params
   const startPoint = new Phaser.Math.Vector2(50, 50)
   const controlPoint = new Phaser.Math.Vector2(400, 300)
@@ -48,6 +49,7 @@ function create() {
 
   curve = new Phaser.Curves.QuadraticBezier(startPoint, controlPoint, endPoint)
   
+
   // Instantiate boxes
   boxes = this.physics.add.group({
     collideWorldBounds: true,
@@ -61,6 +63,7 @@ function create() {
     box.setInteractive()
     this.input.setDraggable(box)
   })
+
 
   // Instantiate points
   points = this.physics.add.group({
@@ -91,15 +94,18 @@ function create() {
     }
   })
 
+
   // Remove listener if not colliding
   this.input.on('dragend', (pointer, gameObject) => {
     emitter.removeListener('changeBackground')
   })
 
+
   // Stick together on collision
   this.physics.add.collider(points, boxes, (_point, _box) => {
     handleStick(_point, _box.x, _box.y)
   })
+
 
   // Trigger emit
   this.input.addListener('pointerup', () => {
