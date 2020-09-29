@@ -26,8 +26,6 @@ let boxes
 let points
 let emitter
 let camera
-let p0Join = false // Toggles for emitter
-let p1Join = false
 
 const game = new Phaser.Game(config);
 
@@ -42,14 +40,21 @@ function create() {
   camera = this.cameras.add(0, 0, 800, 600)
   camera.setBackgroundColor('#123456')
   graphics = this.add.graphics()
+
+  // Set curve params
+  const startPoint = new Phaser.Math.Vector2(50, 50)
+  const controlPoint = new Phaser.Math.Vector2(400, 300)
+  const endPoint = new Phaser.Math.Vector2(750, 550)
+
+  curve = new Phaser.Curves.QuadraticBezier(startPoint, controlPoint, endPoint)
   
-  // Setup Images
+  // Instantiate boxes
   boxes = this.physics.add.group({
     collideWorldBounds: true,
   })
 
-  const box0 = boxes.create(100, 200, 'square')
-  const box1 = boxes.create(200, 300, 'square')
+  const box0 = boxes.create(750, 50, 'square')
+  const box1 = boxes.create(50, 550, 'square')
 
   boxes.getChildren().forEach(box => {
     box.setOrigin(0.5)
@@ -57,14 +62,14 @@ function create() {
     this.input.setDraggable(box)
   })
 
+  // Instantiate points
   points = this.physics.add.group({
     collideWorldBounds: true,
   })
 
-  curve = new Phaser.Curves.Line([100, 100, 500, 500])
-
   const point0 = points.create(curve.p0.x, curve.p0.y, 'circle', 0)
   const point1 = points.create(curve.p1.x, curve.p1.y, 'circle', 0)
+  const point2 = points.create(curve.p2.x, curve.p2.y, 'circle', 0)
 
   points.getChildren().forEach(point => {
     point.setInteractive()
@@ -73,9 +78,10 @@ function create() {
 
   point0.setData('vector', curve.p0)
   point1.setData('vector', curve.p1)
+  point2.setData('vector', curve.p2)
+
 
   // Handle drag
-
   this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
     gameObject.x = dragX
     gameObject.y = dragY
@@ -90,12 +96,12 @@ function create() {
     emitter.removeListener('changeBackground')
   })
 
-  // Set collision flag and stick together
+  // Stick together on collision
   this.physics.add.collider(points, boxes, (_point, _box) => {
     handleStick(_point, _box.x, _box.y)
   })
 
-  // Send emit
+  // Trigger emit
   this.input.addListener('pointerup', () => {
     emitter.emit('changeBackground')
   })
@@ -113,8 +119,6 @@ function handleStick (gameObject, posX, posY) {
   gameObject.data.get('vector').set(posX, posY)
   gameObject.x = posX
   gameObject.y = posY
-
-  console.log('here')
   
   emitter.addListener('changeBackground', handleColour, this)
 }
